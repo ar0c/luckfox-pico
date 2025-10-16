@@ -367,6 +367,15 @@ function luckfox_load_cfg() {
 			luckfox_set_pin_mark "GPIO2_A4" 1
 			luckfox_set_pin_mark "GPIO2_A2" 1
 			luckfox_set_pin_mark "GPIO2_A3" 1
+
+			# Set default RGB resolution to 480x480 for Luckfox Pico Ultra
+			luckfox_rgb_app 1 "reset" "16500000" \
+			"480" "480" \
+			"10" "50" \
+			"8" "8" \
+			"4" "10" \
+			"0" "0" \
+			"0" "1"
 		else
 			echo "Only Luckfox Pico Ultra /Luckfox Pico Ultra W support RGB"
 		fi

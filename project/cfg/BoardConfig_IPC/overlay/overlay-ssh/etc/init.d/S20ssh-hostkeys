@@ -1,0 +1,20 @@
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:          ssh-hostkeys
+# Required-Start:    $local_fs
+# Default-Start:     2 3 4 5
+### END INIT INFO
+set -eu
+
+[ -d /data ] || exit 0
+mkdir -p /data/ssh && chmod 700 /data/ssh
+
+if [ ! -f /data/ssh/ssh_host_ed25519_key ]; then
+  ssh-keygen -t ed25519 -N '' -f /data/ssh/ssh_host_ed25519_key
+  chmod 600 /data/ssh/ssh_host_ed25519_key
+fi
+
+# 用软链接管默认路径（无需改 sshd_config）
+ln -sf /data/ssh/ssh_host_ed25519_key     /etc/ssh/ssh_host_ed25519_key
+ln -sf /data/ssh/ssh_host_ed25519_key.pub /etc/ssh/ssh_host_ed25519_key.pub
+exit 0

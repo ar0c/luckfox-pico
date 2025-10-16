@@ -1,0 +1,69 @@
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:          wifi-provision
+# Required-Start:    $network
+# Default-Start:     2 3 4 5
+### END INIT INFO
+
+WIFI_CONF="/etc/wpa_supplicant.conf"
+AP_HOSTAPD="/etc/hostapd/hostapd.conf"
+DNSMASQ_CONF="/etc/dnsmasq.conf"
+TRY_STA_TIMEOUT=25   # 秒；STA 尝试超时
+
+start_sta() {
+    # 停干扰服务
+    killall hostapd 2>/dev/null
+    killall dnsmasq 2>/dev/null
+
+    # 关闭 AP 网段 IP，交给 DHCP
+    ip addr flush dev wlan0
+    ifconfig wlan0 up
+
+    # 尝试连接上游 AP
+    if [ -f "$WIFI_CONF" ]; then
+        killall -9 wpa_supplicant 2>/dev/null
+        wpa_supplicant -B -i wlan0 -c "$WIFI_CONF"
+        # 获取地址（BusyBox udhcpc）
+        timeout "$TRY_STA_TIMEOUT" sh -c 'udhcpc -i wlan0 -q -n -t 3'
+        if ip addr show dev wlan0 | grep -q "inet "; then
+            echo "[wifi-provision] STA connected."
+            return 0
+        fi
+    fi
+    return 1
+}
+
+start_ap() {
+    echo "[wifi-provision] Falling back to AP mode..."
+    # 配置静态 IP
+    ifconfig wlan0 192.168.4.1 netmask 255.255.255.0 up
+    # 启动 DHCP/DNS
+    dnsmasq --conf-file="$DNSMASQ_CONF"
+    # 启动热点
+    hostapd -B "$AP_HOSTAPD"
+
+    # 如需 NAT 出网，取消注释
+    # /etc/iptables.ap-nat.sh
+}
+
+case "$1" in
+  start)
+    if ! start_sta; then
+        start_ap
+    fi
+    ;;
+  stop)
+    killall hostapd 2>/dev/null
+    killall dnsmasq 2>/dev/null
+    killall wpa_supplicant 2>/dev/null
+    ;;
+  restart)
+    $0 stop
+    sleep 1
+    $0 start
+    ;;
+  *)
+    echo "Usage: $0 {start|stop|restart}"
+    exit 1
+esac
+exit 0

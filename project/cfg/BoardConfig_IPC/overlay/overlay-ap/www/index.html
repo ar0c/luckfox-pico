@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>设备配网</title>
+<style>
+  body{font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial;margin:24px;line-height:1.5}
+  .card{max-width:520px;margin:auto;padding:16px;border:1px solid #ddd;border-radius:12px}
+  label{display:block;margin:8px 0 4px}
+  input,select,button{width:100%;padding:10px;border:1px solid #ccc;border-radius:10px}
+  button{cursor:pointer}
+  small{color:#666}
+  #msg{margin-top:12px}
+</style>
+</head>
+<body>
+<div class="card">
+  <h2>连接 Wi-Fi</h2>
+  <label for="ssid">SSID</label>
+  <select id="ssid"></select>
+  <small>若未列出，可手动输入：</small>
+  <input id="ssid_manual" placeholder="自定义 SSID（可选）">
+
+  <label for="pass">密码</label>
+  <input id="pass" type="password" placeholder="WPA2 密码">
+
+  <button id="btn">提交并连接</button>
+  <div id="msg"></div>
+</div>
+
+<script>
+async function loadScan(){
+  const sel = document.getElementById('ssid');
+  sel.innerHTML = '<option>扫描中…</option>';
+  try{
+    const r = await fetch('/cgi-bin/scan.sh');
+    const j = await r.json();
+    sel.innerHTML = '';
+    j.networks.forEach(n=>{
+      const o = document.createElement('option');
+      o.value = n.ssid;
+      o.textContent = `${n.ssid} (${n.signal} dBm)`;
+      sel.appendChild(o);
+    });
+  }catch(e){
+    sel.innerHTML = '<option>扫描失败，可手输</option>';
+  }
+}
+loadScan();
+
+document.getElementById('btn').onclick = async ()=>{
+  const sel = document.getElementById('ssid');
+  const manual = document.getElementById('ssid_manual').value.trim();
+  const ssid = manual || sel.value || '';
+  const pass = document.getElementById('pass').value;
+  const msg = document.getElementById('msg');
+  if(!ssid){ msg.textContent = '请输入或选择 SSID'; return; }
+
+  const body = new URLSearchParams({ssid, pass});
+  msg.textContent = '提交中…';
+  try{
+    const r = await fetch('/cgi-bin/provision.sh', {
+      method:'POST',
+      headers: {'Content-Type':'application/x-www-form-urlencoded'},
+      body
+    });
+    const t = await r.text();
+    msg.innerHTML = t;
+    // 15s 后自动刷新状态
+    setTimeout(()=>{ window.location.href='/cgi-bin/status.sh'; }, 15000);
+  }catch(e){
+    msg.textContent = '提交失败：' + e;
+  }
+};
+</script>
+</body>
+</html>

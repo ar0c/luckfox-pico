@@ -1,6 +1,6 @@
 #!/bin/bash
 set -eE
-
+export PATH=$(echo "$PATH" | tr -d ' \t\n')     
 export LC_ALL=C
 export LD_LIBRARY_PATH=
 RECORD_IFS="$IFS"
@@ -1531,6 +1531,7 @@ EOF
 		chmod a+x $RK_PROJECT_FILE_ROOTFS_SCRIPT
 		cp -f $RK_PROJECT_FILE_ROOTFS_SCRIPT $RK_PROJECT_PACKAGE_ROOTFS_DIR/etc/init.d
 	fi
+
 }
 
 function parse_partition_env() {
@@ -2455,6 +2456,8 @@ function __RUN_POST_BUILD_SCRIPT() {
 }
 
 function post_overlay() {
+	msg_info "post_overlay, update buildinfo"
+	./build_version.sh
 	[ -n "$RK_POST_OVERLAY" ] || return 0
 
 	local tmp_path
@@ -2462,6 +2465,7 @@ function post_overlay() {
 	tmp_path=$(dirname $tmp_path)
 
 	for overlay_dir in $RK_POST_OVERLAY; do
+		echo "overlay_dir: $overlay_dir"
 		if [ -d "$tmp_path/overlay/$overlay_dir" ]; then
 			rsync -a --ignore-times --keep-dirlinks --chmod=u=rwX,go=rX --exclude .empty \
 				$tmp_path/overlay/$overlay_dir/* $RK_PROJECT_PACKAGE_ROOTFS_DIR/
@@ -2493,7 +2497,6 @@ function __RUN_POST_BUILD_USERDATA_SCRIPT() {
 
 function build_firmware() {
 	check_config RK_PARTITION_CMD_IN_ENV || return 0
-
 	build_env
 
 	if [ "$RK_ENABLE_FASTBOOT" = "y" ]; then
@@ -2576,6 +2579,7 @@ function build_firmware() {
 		find "${RK_PROJECT_OUTPUT_IMAGE}" -type f -name "*.ubi" -exec rm {} +
 	fi
 	finish_build
+	sudo ./ch.sh $RK_PROJECT_OUTPUT_IMAGE/rootfs.img
 }
 
 # SAVE ALL UBOOT CONFIG

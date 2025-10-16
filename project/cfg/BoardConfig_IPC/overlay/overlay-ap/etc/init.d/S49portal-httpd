@@ -1,0 +1,33 @@
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:          portal-httpd
+# Required-Start:    S48wifi-provision
+# Default-Start:     2 3 4 5
+### END INIT INFO
+
+WWW=/www
+CGI="$WWW/cgi-bin"
+PORTAL_IP="192.168.4.1"
+PIDF=/var/run/httpd.pid
+
+case "$1" in
+  start)
+    mkdir -p "$CGI"
+    # 仅监听 AP 地址，避免误对外暴露
+    httpd -f -p "$PORTAL_IP:80" -h "$WWW" -c "**.sh"
+    echo $$ > "$PIDF"
+    ;;
+  stop)
+    killall httpd 2>/dev/null
+    rm -f "$PIDF"
+    ;;
+  restart)
+    $0 stop
+    sleep 1
+    $0 start
+    ;;
+  *)
+    echo "Usage: $0 {start|stop|restart}"
+    exit 1
+esac
+exit 0
