@@ -3,9 +3,6 @@
 load_luckfoxconfig() {
 	if [ -f /usr/bin/luckfox-config ]; then
 		luckfox-config load
-		if [ -f "/usr/bin/luckfox_lvgl_demo" ]; then
-			luckfox_lvgl_demo &
-		fi
 	fi
 }
 
