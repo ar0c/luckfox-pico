@@ -98,3 +98,4 @@ BR2_PACKAGE_NANO=y
 BR2_PACKAGE_HOST_DTC=y
 
 # ------ ar0c config-------
+BR2_TARGET_LOCALTIME="Asia/Shanghai"
